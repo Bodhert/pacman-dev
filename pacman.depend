@@ -1,0 +1,11 @@
+# depslib dependency file v1.0
+1475900489 source:c:\users\alejo\desktop\pacman dev\inicia.cpp
+	"inicia.h"
+	<allegro.h>
+
+1475900490 c:\users\alejo\desktop\pacman dev\inicia.h
+
+1496977291 source:c:\users\alejo\desktop\pacman dev\main.cpp
+	<allegro.h>
+	"inicia.h"
+
