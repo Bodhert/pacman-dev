@@ -1,5 +1,6 @@
 #include <allegro.h>
 #include "inicia.h"
+#include <cstdlib>
 #define MAXFILAS 20
 #define MAXCOLS 31
 BITMAP *buffer;
@@ -7,9 +8,15 @@ BITMAP *roca;
 BITMAP *pacbmp;
 BITMAP *pacman;
 BITMAP *comida;
+BITMAP *enemigobmp;
+BITMAP *enemigo;
+BITMAP *muertebmp;
 
 int dir = 4;
 int px = 30*14, py = 30*17;
+int fdir = 0 , _x = 30 * 14 , _y = 30 * 14;
+int anteriorpx , anteriorpy;
+
 
 char mapa[MAXFILAS][MAXCOLS] =
 {
@@ -115,6 +122,67 @@ void mover_pacman(int dir)
 
 
 }
+
+void dibujar_fantasma()
+{
+    blit(enemigobmp,enemigo,0,0,0,0,30,30);
+    draw_sprite(buffer,enemigo,_x,_y);
+}
+
+void choque_pacman()
+{
+    if( py == _y && px == _x || anteriorpx == _x && anteriorpy == _y)
+    {
+        for(int i = 0; i <= 5; ++i)
+        {
+            clear(pacman);
+            clear(buffer);
+            dibujar_mapa();
+
+            blit(muertebmp,pacman,i*33,0,0,0,33,33);
+            draw_sprite(buffer,pacman,px,py);
+            pantalla();
+            rest(80);
+        }
+
+        px = 30*14, py = 30*17 , dir = 4;
+    }
+}
+
+void fantasma()
+{
+    dibujar_fantasma();
+    choque_pacman();
+    if(fdir == 0)
+    {
+        if(mapa[_y/30][(_x - 30)/30] != 'X') _x -= 30;
+        else fdir = rand()%4;
+    }
+
+    if(fdir == 1)
+    {
+        if(mapa[_y/30][(_x + 30)/30] != 'X') _x += 30;
+        else fdir = rand()%4;
+    }
+    if(fdir == 2)
+    {
+        if(mapa[(_y-30)/30][_x/30] != 'X') _y -= 30;
+        else fdir = rand()%4;
+    }
+       if(fdir == 3)
+    {
+        if(mapa[(_y+30)/30][_x/30] != 'X') _y += 30;
+        else fdir = rand()%4;
+    }
+
+    // rutina atajos
+
+    if( _x <= -30) _x = 870;
+    else if (_x >= 875) _x = -30;
+
+
+}
+
 int main ()
 {
     inicia_allegro(900,600);
@@ -125,10 +193,15 @@ int main ()
     pacbmp = load_bitmap("pacman.bmp",NULL);
     pacman =  create_bitmap(33,33); // los datos salen de las mediciones de las imagenes
     comida = load_bitmap("Comida.bmp", NULL);
+    enemigo = create_bitmap(30,30);
+    enemigobmp = load_bitmap("enemigo.bmp", NULL);
+    muertebmp =  load_bitmap("muerte.bmp", NULL);
     clear_to_color(buffer, 0x999999);
 
     while(!key[KEY_ESC] && game_over())
     {
+       anteriorpx = px;
+       anteriorpy = py;
       if(key[KEY_RIGHT]) dir = 1;
       else if(key[KEY_LEFT]) dir = 0;
       else if(key[KEY_UP]) dir = 2;
@@ -137,6 +210,7 @@ int main ()
       clear(buffer);
       dibujar_mapa();
       dibujar_personaje_abriendo();
+      fantasma();
       pantalla();
       rest(70);
       dibujar_personaje_cerrando();
