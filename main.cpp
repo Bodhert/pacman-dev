@@ -8,13 +8,14 @@ BITMAP *roca;
 BITMAP *pacbmp;
 BITMAP *pacman;
 BITMAP *comida;
-BITMAP *enemigobmp;
-BITMAP *enemigo;
 BITMAP *muertebmp;
+MIDI *musica1;
+SAMPLE *bolita;
+SAMPLE *caminando;
+SAMPLE *muerte;
 
 int dir = 4;
 int px = 30*14, py = 30*17;
-int fdir = 0 , _x = 30 * 14 , _y = 30 * 14;
 int anteriorpx , anteriorpy;
 
 
@@ -22,22 +23,22 @@ char mapa[MAXFILAS][MAXCOLS] =
 {
     "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
     "X      o o  XXXXX  o o       X",
-    "X XXX XXXXX XXXXX XXXXX XXX  X",
-    "X XXX XXXXX XXXXX XXXXX XXX  X",
+    "X XXX XXXXX XXXXX XXXXX XXXX X",
+    "X XXX XXXXX XXXXX XXXXX XXXX X",
     "X                            X",
-    "X XXX XX XXXXXXXXXXX XX XXX  X",
+    "X XXX XX XXXXXXXXXXX XX XXXX X",
     "X     XX     XXX     XX      X",
-    "X XXX XXXXXX XXX XXXXXX XXX  X",
-    "X XXX XX o         o XX XXX  X",
+    "X XXX XXXXXX XXX XXXXXX XXXX X",
+    "X XXX XX o         o XX XXXX X",
     "      XX XXXXXXXXXXX XX       ",
-    "X XXX XX XXXXXXXXXXX XX XXX  X",
-    "X XXX XX o         o XX XXX  X",
-    "X XXX XXXXXX XXX XXXXXX XXX  X",
+    "X XXX XX XXXXXXXXXXX XX XXXX X",
+    "X XXX XX o         o XX XXXX X",
+    "X XXX XXXXXX XXX XXXXXX XXXX X",
     "X     XX     XXX     XX      X",
-    "X XXX XX XXXXXXXXXXX XX XXX  X",
-    "X XXX                   XXX  X",
-    "X XXX XXXX XXXXXXXX XXX XXX  X",
-    "X XXX XXXX          XXX XXX  X",
+    "X XXX XX XXXXXXXXXXX XX XXXX X",
+    "X XXX                   XXXX X",
+    "X XXX XXXX XXXXXXXX XXX XXXX X",
+    "X XXX XXXX          XXX XXXX X",
     "X          XXXXXXXX          X",
     "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
 };
@@ -56,8 +57,14 @@ void dibujar_mapa()
             }
             else if(mapa[row][col] == 'o')
             {
+
                 draw_sprite(buffer, comida , col*30, row*30 );
-                if(py/30 == row && px/30 == col) mapa[row][col] = ' ';
+                if(py/30 == row && px/30 == col)
+                {
+                    play_sample(bolita,100,150,1000,0); // hay un bug con comerse la bolita
+                    mapa[row][col] = ' ';
+
+                }
             }
         }
     }
@@ -123,83 +130,113 @@ void mover_pacman(int dir)
 
 }
 
-void dibujar_fantasma()
+
+class fantasma
 {
-    blit(enemigobmp,enemigo,0,0,0,0,30,30);
-    draw_sprite(buffer,enemigo,_x,_y);
+
+    BITMAP *enemigobmp;
+    BITMAP *enemigo;
+    int fdir, _x , _y;
+
+
+public :
+    fantasma(int x, int y); // constructor
+    void dibujar_fantasma() const;
+    void mover_fantasma();
+    void choque_pacman();
+
+};
+
+fantasma::fantasma(int x, int y)
+{
+ _x = x; _y = y;
+ fdir = rand()%4;
+ enemigo = create_bitmap(30,30);
+ enemigobmp = load_bitmap("enemigo.bmp", NULL);
 }
 
-void choque_pacman()
+void fantasma::dibujar_fantasma() const
 {
-    if( py == _y && px == _x || anteriorpx == _x && anteriorpy == _y)
-    {
-        for(int i = 0; i <= 5; ++i)
+        blit(enemigobmp,enemigo,0,0,0,0,30,30);
+        draw_sprite(buffer,enemigo,_x,_y);
+}
+
+void fantasma::choque_pacman()
+{
+     if( py == _y && px == _x || anteriorpx == _x && anteriorpy == _y)
         {
-            clear(pacman);
-            clear(buffer);
-            dibujar_mapa();
+            play_sample(muerte,100,150,1000,0);
+            for(int i = 0; i <= 5; ++i)
+            {
+                clear(pacman);
+                clear(buffer);
+                dibujar_mapa();
 
-            blit(muertebmp,pacman,i*33,0,0,0,33,33);
-            draw_sprite(buffer,pacman,px,py);
-            pantalla();
-            rest(80);
+                blit(muertebmp,pacman,i*33,0,0,0,33,33);
+                draw_sprite(buffer,pacman,px,py);
+                pantalla();
+                rest(80);
+            }
+
+            px = 30*14, py = 30*17 , dir = 4;
         }
-
-        px = 30*14, py = 30*17 , dir = 4;
-    }
 }
 
-void fantasma()
+void fantasma::mover_fantasma()
 {
     dibujar_fantasma();
-    choque_pacman();
-    if(fdir == 0)
-    {
-        if(mapa[_y/30][(_x - 30)/30] != 'X') _x -= 30;
-        else fdir = rand()%4;
-    }
+        choque_pacman();
+        if(fdir == 0)
+        {
+            if(mapa[_y/30][(_x - 30)/30] != 'X') _x -= 30;
+            else fdir = rand()%4;
+        }
 
-    if(fdir == 1)
-    {
-        if(mapa[_y/30][(_x + 30)/30] != 'X') _x += 30;
-        else fdir = rand()%4;
-    }
-    if(fdir == 2)
-    {
-        if(mapa[(_y-30)/30][_x/30] != 'X') _y -= 30;
-        else fdir = rand()%4;
-    }
-       if(fdir == 3)
-    {
-        if(mapa[(_y+30)/30][_x/30] != 'X') _y += 30;
-        else fdir = rand()%4;
-    }
+        if(fdir == 1)
+        {
+            if(mapa[_y/30][(_x + 30)/30] != 'X') _x += 30;
+            else fdir = rand()%4;
+        }
+        if(fdir == 2)
+        {
+            if(mapa[(_y-30)/30][_x/30] != 'X') _y -= 30;
+            else fdir = rand()%4;
+        }
+           if(fdir == 3)
+        {
+            if(mapa[(_y+30)/30][_x/30] != 'X') _y += 30;
+            else fdir = rand()%4;
+        }
 
-    // rutina atajos
+        // rutina atajos
 
-    if( _x <= -30) _x = 870;
-    else if (_x >= 875) _x = -30;
-
-
+        if( _x <= -30) _x = 870;
+        else if (_x >= 875) _x = -30;
 }
 
 int main ()
 {
     inicia_allegro(900,600);
     inicia_audio(70,70);
+    musica1 = load_midi("mario.mid");
+    bolita = load_wav("coin.wav");
+    caminando = load_wav("jump.wav");
+    muerte = load_wav("Muerte.wav");
 
     buffer = create_bitmap(900,600);
     roca = load_bitmap("roca.bmp",NULL);
     pacbmp = load_bitmap("pacman.bmp",NULL);
     pacman =  create_bitmap(33,33); // los datos salen de las mediciones de las imagenes
     comida = load_bitmap("Comida.bmp", NULL);
-    enemigo = create_bitmap(30,30);
-    enemigobmp = load_bitmap("enemigo.bmp", NULL);
     muertebmp =  load_bitmap("muerte.bmp", NULL);
     clear_to_color(buffer, 0x999999);
+    fantasma A(30*2,30*3);
+    fantasma B(30*15,30*15);
 
+    play_midi(musica1,1);
     while(!key[KEY_ESC] && game_over())
     {
+    if( dir != 4 ) play_sample(caminando,100,150,1000,0);
        anteriorpx = px;
        anteriorpy = py;
       if(key[KEY_RIGHT]) dir = 1;
@@ -210,7 +247,8 @@ int main ()
       clear(buffer);
       dibujar_mapa();
       dibujar_personaje_abriendo();
-      fantasma();
+      A.mover_fantasma();
+      B.mover_fantasma();
       pantalla();
       rest(70);
       dibujar_personaje_cerrando();
